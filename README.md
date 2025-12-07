@@ -1,6 +1,6 @@
-# Room Temperature Controller – ESP32 + DHT11 + LCD + Web Dashboard
+# Room Temperature Controller – ESP32 + DHT11 + LCD 16×2 + Web Dashboard
 
-This project is a small IoT system for **monitoring and controlling room temperature** using:
+This repository contains a small IoT project for **monitoring and controlling room temperature** using:
 
 - **ESP32** as the main controller & REST API server  
 - **DHT11** sensor for temperature & humidity  
@@ -10,39 +10,39 @@ This project is a small IoT system for **monitoring and controlling room tempera
   - CH2 – PTC heater  
   - CH3 – Fan 1  
   - CH4 – Fan 2  
-- A **separate web dashboard** (HTML + CSS + JS) for monitoring and manual control
+- A **separate web dashboard** (HTML + CSS + JavaScript) for monitoring and manual control
 
-The system tries to keep the room at around **26 °C** using **automatic control**, but also allows **manual override** from the web UI. When the user stops interacting for a while, the system automatically returns to AUTO mode.
+The system tries to keep the room at around **26 °C** using automatic control, but also allows **manual override** from the web UI. When the user stops interacting for a while, the system automatically returns to AUTO mode.
 
 ---
 
 ## Features
 
 - 🌡️ **Automatic temperature control**
-  - Target: **26 °C**
+  - Target temperature: **26 °C**
   - Uses **hysteresis** (±0.8 °C) to avoid relay “chattering”
   - Too hot → fans ON, heater OFF  
   - Too cold → heater ON, fans OFF  
-  - Comfortable range → all outputs OFF (save energy)
+  - Comfortable range → all outputs OFF (energy saving)
 
-- 📟 **On-device display (LCD 16×2 I2C)**
+- 📟 **On-device LCD display (16×2 I2C)**
   - Shows temperature & humidity
   - Shows mode: **AUTO / MAN**
-  - Shows heater & fan states in compact format
+  - Shows heater & fan states in compact format (e.g. `AUT H:0 F:12`)
 
-- 🌐 **REST API on ESP32**
-  - `GET /status` → JSON with sensor data & relay states
-  - `GET /relay?ch=X&state=Y` → manual control of relays
+- 🌐 **ESP32 REST API**
+  - `GET /status` → JSON with sensor data, mode, and relay states
+  - `GET /relay?ch=X&state=Y` → manual control for each relay channel
 
 - 🕹 **Web Dashboard (standalone HTML file)**
-  - Realtime monitoring (auto refresh)
+  - Real-time monitoring with auto-refresh
   - Manual ON/OFF buttons for all 4 relay channels
-  - Mode indicator (AUTO / MANUAL) + manual timeout
+  - Mode indicator (AUTO / MANUAL) + manual timeout countdown
 
 - 👤 **User-priority manual mode**
-  - Any manual command from the web switches system to **MANUAL mode**
+  - Any manual command from the web switches the system into **MANUAL** mode
   - AUTO logic is temporarily disabled (user has full control)
-  - After a configurable timeout with no user input, system **returns to AUTO**
+  - After a configurable timeout with no user input, the system **returns to AUTO**
 
 ---
 
@@ -50,17 +50,17 @@ The system tries to keep the room at around **26 °C** using **automatic control
 
 High-level data flow:
 
-1. **DHT11** → reads temperature & humidity → sends to **ESP32**
+1. **DHT11** reads temperature & humidity → sends data to **ESP32**
 2. **ESP32**:
-   - Runs control logic (AUTO mode)
-   - Drives **relay board** (heater + fans)
-   - Updates **LCD 16×2** with current state
-   - Exposes REST API (`/status`, `/relay`)
+   - Runs the automatic control logic
+   - Drives the **relay board** (heater + fans)
+   - Updates the **LCD 16×2** with current status
+   - Exposes REST API (`/status`, `/relay`) over HTTP
 3. **Web Dashboard**:
-   - Runs on phone / laptop browser (not inside ESP32)
-   - Fetches `/status` every few seconds
+   - Runs in a regular browser (phone / laptop)
+   - Periodically calls `/status` (polling)
    - Sends manual control commands via `/relay?ch=X&state=Y`
-4. **User device** and **ESP32** are connected to the **same WiFi network** (e.g. phone hotspot)
+4. **User device** and **ESP32** must be connected to the **same WiFi network** (e.g. phone hotspot).
 
 ---
 
@@ -70,36 +70,35 @@ High-level data flow:
 
 - 1 × ESP32 Dev Module  
 - 1 × DHT11 temperature & humidity sensor  
-- 1 × LCD 16×2 with I2C backpack (e.g. address `0x27`)  
+- 1 × LCD 16×2 with I2C backpack (default address `0x27`)  
 - 1 × 4-channel relay module (active LOW)  
-- 1 × PTC heater (properly rated for relay & power supply)  
-- 2 × DC fans (Fan 1 & Fan 2)  
+- 1 × PTC heater (rated according to relay & supply)  
+- 2 × DC fans (Fan 1 and Fan 2)  
 - 1 × 5 V power supply for relay & loads  
-- Breadboard / PCB, jumper wires, etc.
+- Jumper wires, breadboard / PCB, etc.
 
-> ⚠️ **Warning – Mains safety**  
-> If you use mains-powered heater or high-voltage loads, make sure you know what you’re doing: use proper isolation, fuses, and safe wiring. This project is intended primarily as a **learning / hobby** setup.
+> ⚠️ **Safety note**  
+> If you use mains-powered heater or high-voltage loads, please handle isolation, grounding, and protection properly. This repo focuses on control logic, not mains wiring best practices.
 
-### ESP32 Pinout (default configuration)
-
-In the final firmware:
+### ESP32 Pinout (default firmware)
 
 - **DHT11**
   - Data → `GPIO 19`
 
 - **Relays**
-  - CH1 → `GPIO 0`  *(note: boot strapping pin; see note below)*  
-  - CH2 → `GPIO 14` → PTC heater  
-  - CH3 → `GPIO 12` → Fan 1  
-  - CH4 → `GPIO 13` → Fan 2  
+  - CH1 → `GPIO 0`   (empty / reserved – *boot strapping pin, see note below*)  
+  - CH2 → `GPIO 14`  (PTC heater)  
+  - CH3 → `GPIO 12`  (Fan 1)  
+  - CH4 → `GPIO 13`  (Fan 2)  
 
 - **LCD 16×2 I2C**
   - SDA → `GPIO 21`
   - SCL → `GPIO 22`
-  - I2C address: `0x27` (common default; verify with I2C scanner if needed)
+  - I2C address: `0x27` (change in code if yours is `0x3F` or others)
 
 > ⚠️ **Boot note (GPIO 0)**  
-> GPIO 0 is a boot / strapping pin. If CH1 load pulls this pin low at boot, ESP32 may fail to start or enter download mode. If you run into boot issues, consider moving CH1 to a safer GPIO (e.g. 23, 25, 26, 27) and updating the firmware pin config accordingly.
+> GPIO0 is a boot / strapping pin. If the relay + load on CH1 pulls this pin LOW during boot, ESP32 may fail to boot or enter download mode.  
+> If you experience boot issues, move CH1 to a safer GPIO (e.g. 23 / 25 / 26 / 27) and update the pin definitions in the firmware.
 
 ---
 
@@ -112,164 +111,92 @@ In the final firmware:
     - `WebServer.h`
     - `DHTesp.h`
     - `LiquidCrystal_I2C.h`
+  - Language: C/C++ (Arduino-style)
 
-- **Web dashboard**
-  - Plain **HTML** for layout
-  - **CSS** for styling (cards, gradient background)
-  - **JavaScript** (`fetch`) for calling ESP32 REST API
+- **Web Dashboard**
+  - HTML5 for structure  
+  - CSS for layout and visual design (cards, gradient background, badges)  
+  - Vanilla JavaScript using `fetch()` for API calls
 
-You can develop & flash the firmware with:
+You can develop and upload the firmware with:
 
-- Arduino IDE, PlatformIO, or any other ESP32-friendly environment.
+- **Arduino IDE** (simplest), or  
+- **PlatformIO** (VSCode extension), etc.
 
 ---
 
-## Firmware Overview (ESP32)
-
-The main Arduino sketch (e.g. `room_temp_controller_esp32.ino`) does:
-
-1. Initialize DHT11, relay pins, and the LCD I2C.
-2. Connect to WiFi as **station**:
-
-   ```cpp
-   const char* ssid     = "YOUR_WIFI_SSID";
-   const char* password = "YOUR_WIFI_PASSWORD";
-    ````
-
-3. Start a `WebServer server(80);`
-4. Register handlers:
-
-   * `/` → plain info text
-   * `/status` → JSON status
-   * `/relay` → control relays + enable MANUAL mode
-5. In `loop()`:
-
-   * `server.handleClient();`
-   * Read DHT11 every `DHT_INTERVAL_MS`
-   * If in MANUAL mode, check timeout; if expired → switch back to AUTO
-   * Run `updateAutoControl()` to adjust heater / fans (AUTO only)
-   * Update LCD every `LCD_INTERVAL_MS`
-
-### Control Logic
-
-* Target temperature: `TARGET_TEMP = 26.0`
-* Hysteresis: `HYSTERESIS = 0.8`
-
-So:
-
-* **Too hot**
-
-  * Condition: `T > 26.0 + 0.8 = 26.8 °C`
-  * Action:
-
-    * Heater (CH2) → OFF
-    * Fan1 (CH3)  → ON
-    * Fan2 (CH4)  → ON
-
-* **Too cold**
-
-  * Condition: `T < 26.0 - 0.8 = 25.2 °C`
-  * Action:
-
-    * Heater (CH2) → ON
-    * Fan1 (CH3)  → OFF
-    * Fan2 (CH4)  → OFF
-
-* **Comfort zone**
-
-  * Condition: `25.2 °C ≤ T ≤ 26.8 °C`
-  * Action:
-
-    * Heater OFF, Fan1 OFF, Fan2 OFF
-
-> The system uses **ACTIVE LOW** relays:
-> `LOW` → ON, `HIGH` → OFF.
-> This is handled internally by `RELAY_ON` / `RELAY_OFF` constants.
+## Firmware Logic
 
 ### Modes: AUTO vs MANUAL
 
-* **AUTO mode**
+- **AUTO mode**
+  - `manualMode == false`
+  - Temperature-based control is active (`updateAutoControl()`)
+  - Relays are set according to temperature relative to target + hysteresis
 
-  * `manualMode == false`
-  * `updateAutoControl()` is active
-  * Relays are controlled by the temperature logic
+- **MANUAL mode**
+  - Triggered whenever `/relay?ch=X&state=Y` is called
+  - `manualMode == true`
+  - Automatic control is *paused*: `updateAutoControl()` returns early
+  - Each manual command updates `lastUserActionMillis`
+  - When `MANUAL_TIMEOUT_MS` has passed without any new command, the firmware automatically switches back to AUTO
 
-* **MANUAL mode**
+### Temperature Control
 
-  * Triggered whenever a user calls `/relay?ch=...&state=...`
-  * `manualMode == true`
-  * `updateAutoControl()` does nothing (user has full control)
-  * After `MANUAL_TIMEOUT_MS` (e.g. 3 minutes) with no new user command:
+Configured constants:
 
-    * `manualMode` is set back to `false` (AUTO resumes)
+```cpp
+const float TARGET_TEMP = 26.0;   // °C
+const float HYSTERESIS  = 0.8;    // °C
+```
 
----
+Effective zones:
 
-## Web Dashboard Overview
+- **Too hot** → `T > 26.8 °C`  
+  - Heater (CH2) OFF  
+  - Fan1 (CH3) ON  
+  - Fan2 (CH4) ON  
 
-The dashboard is a standalone `index.html` file (not served from the ESP32). It:
+- **Too cold** → `T < 25.2 °C`  
+  - Heater (CH2) ON  
+  - Fan1 (CH3) OFF  
+  - Fan2 (CH4) OFF  
 
-* Displays:
+- **Comfort zone** → `25.2 °C ≤ T ≤ 26.8 °C`  
+  - Heater OFF  
+  - Fans OFF  
 
-  * ESP32 base URL
-  * Connection status
-  * Mode (AUTO / MANUAL) with color badge
-  * Target temperature
-  * Current temperature & humidity
-  * Relay states (CH1–CH4)
-  * Last update time
-* Provides:
+Relays are **active LOW**, and this is handled by:
 
-  * ON/OFF buttons for CH1, CH2, CH3, CH4
+```cpp
+const bool RELAY_ON  = LOW;
+const bool RELAY_OFF = HIGH;
+```
 
-### Connecting the Dashboard
+### LCD Output
 
-1. **Find ESP32 IP**
+The LCD is updated periodically and usually shows:
 
-   * Open Serial Monitor or check the LCD:
+- Line 1: `T:26.3C H:60%`  
+- Line 2: `AUT H:0 F:12` or `MAN H:1 F:0`, etc.
 
-     * It will print something like: `WiFi OK: 192.168.x.x`
-
-2. **Edit `index.html`**
-
-   * Find:
-
-     ```js
-     const ESP_BASE = "http://192.168.1.50";
-     ```
-
-   * Change to the actual ESP32 IP, e.g.:
-
-     ```js
-     const ESP_BASE = "http://192.168.184.87";
-     ```
-
-3. **Serve the HTML file**
-
-   * Option A: VSCode + “Live Server” extension
-
-   * Option B: Python simple HTTP server:
-
-     ```bash
-     python -m http.server 8000
-     ```
-
-   * Then open in browser:
-     `http://localhost:8000/index.html`
-
-4. **Network requirement**
-
-   * Your PC/phone that opens the dashboard **must be on the same network** as the ESP32 (e.g. same phone hotspot / WiFi).
+- `AUT` / `MAN` — current mode  
+- `H:0/1` — heater OFF/ON  
+- `F:0/1/2/12` — fan combination:
+  - `0` → both fans OFF  
+  - `1` → Fan 1 ON only  
+  - `2` → Fan 2 ON only  
+  - `12` → both Fan 1 and Fan 2 ON
 
 ---
 
-## REST API Reference
+## REST API
 
 ### `GET /status`
 
-Returns current system status as JSON.
+Returns the full system state as JSON.
 
-**Example response:**
+**Example:**
 
 ```json
 {
@@ -287,154 +214,150 @@ Returns current system status as JSON.
 }
 ```
 
-* `mode` — `"AUTO"` or `"MANUAL"`
-* `manual_remaining_s` — remaining manual-mode timeout in seconds
-* `target_temp` — configured target temperature (°C)
-* `temperature` — last measured temperature (°C) or `null` if not available
-* `humidity` — last measured relative humidity (%) or `null`
-* `relay.ch1..ch4` — `true` if relay is ON, `false` if OFF
+- `mode` — `"AUTO"` or `"MANUAL"`
+- `manual_remaining_s` — remaining manual-mode timeout in seconds
+- `target_temp` — configured target temperature (°C)
+- `temperature` — last measured temperature (°C) or `null` if not available
+- `humidity` — last measured relative humidity (%) or `null`
+- `relay.ch1..ch4` — boolean, `true` = ON, `false` = OFF
 
 ### `GET /relay?ch=X&state=Y`
 
-Control a single relay channel.
+Changes one relay channel state and switches to MANUAL mode.
 
-* `ch` — relay channel number (1–4)
-* `state` — `0` = OFF, nonzero = ON
+- `ch` — relay channel (1–4)  
+- `state` — `0` = OFF, non-zero = ON
 
-**Example:**
+**Examples:**
 
-* Turn heater (CH2) ON:
+- Turn heater (CH2) ON:
 
-  ```
+  ```text
   GET /relay?ch=2&state=1
   ```
 
-* Turn Fan 1 (CH3) OFF:
+- Turn Fan 1 (CH3) OFF:
 
-  ```
+  ```text
   GET /relay?ch=3&state=0
   ```
 
-**Response:**
+Response: same JSON format as `/status`, with the *updated* state.
 
-Returns the same JSON structure as `/status`, representing the *updated* state.
-
-> Any `/relay` call switches system to **MANUAL mode** and updates the manual timeout.
+> Any `/relay` request will:
+> - Set `manualMode = true`
+> - Reset the manual timeout counter
+> - Return the current status JSON payload
 
 ---
 
-## Getting Started
+## Web Dashboard
 
-1. **Clone this repository**
+The dashboard is a standalone file (e.g. `index.html`) and **not** embedded in the ESP32. It:
+
+- Shows:
+  - ESP32 base URL
+  - Connection status
+  - Mode (AUTO/MANUAL)
+  - Target temperature
+  - Current temperature & humidity
+  - Relay states for CH1–CH4
+  - Last update time
+
+- Provides:
+  - ON/OFF buttons for each relay channel
+  - Refresh button to manually re-poll `/status`
+  - Auto-refresh interval (default: every 5 seconds)
+
+### Setup Steps
+
+1. **Flash the ESP32 firmware**
+   - Configure your WiFi SSID & password in the code
+   - Upload the `.ino` file to ESP32
+   - Open Serial Monitor or check the LCD to get the ESP32 IP address (e.g. `192.168.184.87`)
+
+2. **Edit the dashboard’s base URL**
+   - Open `index.html`
+   - Find:
+
+     ```js
+     const ESP_BASE = "http://192.168.1.50";
+     ```
+
+   - Replace with your ESP32 IP, for example:
+
+     ```js
+     const ESP_BASE = "http://192.168.184.87";
+     ```
+
+3. **Serve the HTML file**
+   - Option 1: VSCode + “Live Server” extension  
+   - Option 2: Simple Python HTTP server:
+
+     ```bash
+     python -m http.server 8000
+     ```
+
+   - Then open: `http://localhost:8000/index.html`
+
+4. **Ensure same network**
+   - Your PC/phone and the ESP32 must be on the **same WiFi network** (e.g. same hotspot).
+
+---
+
+## Getting Started (Quick)
+
+1. Clone this repo:
 
    ```bash
-   git clone https://github.com/<your-username>/<your-repo-name>.git
-   cd <your-repo-name>
+   git clone https://github.com/<your-username>/<this-repo>.git
+   cd <this-repo>
    ```
 
-2. **Install Arduino requirements**
-
-   * Install **ESP32 board support** (via Boards Manager).
-   * Install libraries:
-
-     * `DHT sensor library for ESPx` / `DHTesp`
-     * `LiquidCrystal_I2C`
-   * Select the correct ESP32 board in Arduino IDE.
-
-3. **Open the firmware sketch**
-
-   * Open the `.ino` file in this repo.
-   * Adjust:
-
-     * `ssid` and `password`
-     * Relay pins if your wiring is different
-
-4. **Upload the sketch**
-
-   * Connect ESP32 via USB.
-   * Compile & upload from Arduino IDE / PlatformIO.
-   * Open Serial Monitor @ 115200 to see logs.
-   * Note the printed IP address after WiFi connects.
-
-5. **Run the web dashboard**
-
-   * Edit `index.html` to set the correct `ESP_BASE`.
-   * Serve it locally and open in browser.
-   * You should see up-to-date temperature, mode, and relay states.
+2. Open the **Arduino sketch** in Arduino IDE.
+3. Install required libraries:
+   - `DHTesp`  
+   - `LiquidCrystal_I2C`  
+   - ESP32 core (via Boards Manager)
+4. Set your WiFi credentials in the `.ino` file.
+5. Upload the firmware to ESP32.
+6. Note the IP from Serial Monitor / LCD.
+7. Edit `index.html` → set `ESP_BASE` → serve it locally.
+8. Open the dashboard in browser and start testing.
 
 ---
 
-## Troubleshooting
+## Known Issues & Notes
 
-### ESP32 keeps rebooting / weird logs (`invalid header`, etc.)
+- **WiFi connection issues**  
+  On some setups, the ESP32 may occasionally struggle to connect to WiFi (e.g. hotspot quirks). Rebooting the board and checking logs via Serial Monitor helps identify whether it’s stuck during WiFi initialization.
 
-* Make sure the sketch is correctly uploaded.
-* Double-check board settings (correct ESP32 type, flash size, etc.).
-* Try a different USB cable and port.
+- **GPIO 0 as relay input**  
+  If CH1 is connected to something that pulls GPIO0 low at boot, ESP32 may fail to boot. If that happens, move CH1 to another GPIO and update the code.
 
-### WiFi connection is unstable / fails at first
-
-* Sometimes ESP32 may take a few tries to connect to the hotspot.
-* Check Serial Monitor for logs during WiFi connection.
-* Ensure SSID/password are correct.
-* Keep phone hotspot / router close to the ESP32.
-
-### LCD 16×2 shows nothing
-
-* Verify I2C wiring: SDA → GPIO 21, SCL → GPIO 22, GND/VCC correct.
-* Check the I2C address:
-
-  * Default is `0x27`, but some modules use `0x3F`.
-  * Use an I2C scanner sketch to confirm.
-* Adjust `LiquidCrystal_I2C lcd(0x27, 16, 2);` if needed.
-
-### Relays not switching as expected
-
-* Confirm relay is **active LOW**:
-
-  * If `LOW = ON` and `HIGH = OFF`, the firmware constants are correct.
-  * If your module behaves opposite, invert:
-
-    * `const bool RELAY_ON = HIGH;`
-    * `const bool RELAY_OFF = LOW;`
-* Check wiring:
-
-  * IN pins connected to the correct GPIOs
-  * GND of ESP32 and relay module must be common
-
-### Web dashboard cannot connect to ESP (`Disconnected`)
-
-* Make sure:
-
-  * `ESP_BASE` in `index.html` matches the ESP32 IP.
-  * PC/phone running the dashboard is on the same WiFi network.
-* Check browser console (F12 → Console) for CORS or network errors.
+- **DHT11 accuracy**  
+  DHT11 is a simple/cheap sensor with limited accuracy. If you need better precision or stability, consider using DHT22/SHT series and adjust the code accordingly.
 
 ---
 
 ## License
 
-Add your preferred license here, for example:
+Add your license of choice here, for example:
 
 ```text
 MIT License
 
 Copyright (c) 2025 <Your Name>
-...
 ```
 
 ---
 
 ## Credits
 
-This project was built as a small learning / practical project around:
+This project was created as a small practical experiment combining:
 
-* Embedded systems with **ESP32**
-* Basic **IoT** concepts (sensing, control, HTTP API)
-* Simple **web dashboard** for monitoring & control
+- Embedded systems with **ESP32**
+- Basic **IoT** patterns (sensing, local control, HTTP API)
+- A simple **web dashboard** for user-friendly monitoring & control
 
-Feel free to fork, modify, and adapt it for your own room, rack, incubator, or any other temperature-controlled setup. 😊
-
-```
-::contentReference[oaicite:0]{index=0}
-```
+Feel free to fork, modify, and adapt it for your own room, rack, incubator, or any other DIY temperature control setup. 🙂

@@ -73,8 +73,8 @@ High-level data flow:
 - 1 × LCD 16×2 with I2C backpack (default address `0x27`)  
 - 1 × 4-channel relay module (active LOW)  
 - 1 × PTC heater (rated according to relay & supply)  
-- 2 × DC fans (Fan 1 and Fan 2)  
-- 1 × 5 V power supply for relay & loads  
+- 2 × 12V DC fans (Fan 1 and Fan 2)  
+- 1 × 12V power supply for relay & loads  
 - Jumper wires, breadboard / PCB, etc.
 
 > ⚠️ **Safety note**  
@@ -274,20 +274,20 @@ The dashboard is a standalone file (e.g. `index.html`) and **not** embedded in t
 1. **Flash the ESP32 firmware**
    - Configure your WiFi SSID & password in the code
    - Upload the `.ino` file to ESP32
-   - Open Serial Monitor or check the LCD to get the ESP32 IP address (e.g. `192.168.184.87`)
+   - Open Serial Monitor or check the LCD to get the ESP32 IP address (e.g. `192.168.XXX.XXX`)
 
 2. **Edit the dashboard’s base URL**
    - Open `index.html`
    - Find:
 
      ```js
-     const ESP_BASE = "http://192.168.1.50";
+     const ESP_BASE = "http://192.168.XXX.XXX";
      ```
 
    - Replace with your ESP32 IP, for example:
 
      ```js
-     const ESP_BASE = "http://192.168.184.87";
+     const ESP_BASE = "http://192.168.XXX.XXX";
      ```
 
 3. **Serve the HTML file**
@@ -340,18 +340,6 @@ The dashboard is a standalone file (e.g. `index.html`) and **not** embedded in t
 
 ---
 
-## License
-
-Add your license of choice here, for example:
-
-```text
-MIT License
-
-Copyright (c) 2025 <Your Name>
-```
-
----
-
 ## Credits
 
 This project was created as a small practical experiment combining:
@@ -360,4 +348,4 @@ This project was created as a small practical experiment combining:
 - Basic **IoT** patterns (sensing, local control, HTTP API)
 - A simple **web dashboard** for user-friendly monitoring & control
 
-Feel free to fork, modify, and adapt it for your own room, rack, incubator, or any other DIY temperature control setup. 🙂
+Feel free to fork, modify, and adapt it for your own room, rack, incubator, or any other DIY temperature control setup. 

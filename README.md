@@ -1,4 +1,3 @@
-````markdown
 # Room Temperature Controller – ESP32 + DHT11 + LCD + Web Dashboard
 
 This project is a small IoT system for **monitoring and controlling room temperature** using:
@@ -135,7 +134,7 @@ The main Arduino sketch (e.g. `room_temp_controller_esp32.ino`) does:
    ```cpp
    const char* ssid     = "YOUR_WIFI_SSID";
    const char* password = "YOUR_WIFI_PASSWORD";
-````
+    ````
 
 3. Start a `WebServer server(80);`
 4. Register handlers:

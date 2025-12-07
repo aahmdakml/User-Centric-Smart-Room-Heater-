@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Room Temperature Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --dark: #0f172a;
+      --dark-light: #1e293b;
+      --card-bg: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+      color: #1f2937;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .subtitle span {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #1f2937;
+    }
+
+    .connection-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .connection-info {
+      flex: 1;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .connection-info strong {
+      color: #111827;
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    .status-badge.connected {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-badge.disconnected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .refresh-btn {
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .refresh-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.95);
+    }
+
+    .temp-display {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .temp-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      border-radius: 12px;
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .temp-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: rotate 10s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .temp-card-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .temp-label {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .temp-value {
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .current-readings {
+      display: flex;
+      justify-content: space-around;
+      padding: 16px;
+      background: #f9fafb;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+
+    .reading {
+      text-align: center;
+    }
+
+    .reading-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .reading-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 4px;
+    }
+
+    .reading-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-transform: uppercase;
+    }
+
+    .mode-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 14px;
+      margin: 8px 0;
+    }
+
+    .mode-auto {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .mode-manual {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .relay-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .relay-item {
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .relay-item:hover {
+      background: #f3f4f6;
+    }
+
+    .relay-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .relay-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .relay-state {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .relay-state.on {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .relay-state.off {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-on {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-on:hover {
+      background: #059669;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-off {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-off:hover {
+      background: #dc2626;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .info-text {
+      font-size: 13px;
+      color: #6b7280;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .last-update {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
+
+    .spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Room Temperature Control</h1>
+      <div class="subtitle">
+        <span>ESP32</span>
+        <span>DHT11</span>
+        <span>LCD 16x2</span>
+        <span>Relay 4CH</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="connection-bar">
+        <div class="connection-info">
+          <strong>ESP32 Device</strong>
+          <span id="base-url"></span>
+        </div>
+        <span id="conn-badge" class="status-badge disconnected">
+          <span class="status-dot"></span>
+          Disconnected
+        </span>
+      </div>
+      <button class="refresh-btn" onclick="refreshStatus()">
+        <span>🔄</span>
+        <span>Refresh Status</span>
+      </button>
+      <div id="last-update" class="last-update">
+        Last update: -
+      </div>
+    </div>
+
+    <div class="card" id="status-card">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading status...</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Manual Control</h2>
+      <div class="info-text">
+        <strong>! Info:</strong> Setiap klik tombol akan mengaktifkan mode MANUAL. Sistem akan kembali ke mode AUTO setelah beberapa menit tanpa input.
+      </div>
+
+      <div class="relay-grid" id="relay-controls">
+        <div class="relay-item">
+          <div class="relay-header">
+            <div class="relay-title">CH1 – Empty</div>
+            <div class="relay-state off">OFF</div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-on" onclick="setRelay(1, 1)">
+              <span>✓</span> ON
+            </button>
+            <button class="btn btn-off" onclick="setRelay(1, 0)">
+              <span>✕</span> OFF
+            </button>
+          </div>
+        </div>
+
+        <div class="relay-item">
+          <div class="relay-header">
+            <div class="relay-title">CH2 – PTC Heater</div>
+            <div class="relay-state off">OFF</div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-on" onclick="setRelay(2, 1)">
+              <span>✓</span> ON
+            </button>
+            <button class="btn btn-off" onclick="setRelay(2, 0)">
+              <span>✕</span> OFF
+            </button>
+          </div>
+        </div>
+
+        <div class="relay-item">
+          <div class="relay-header">
+            <div class="relay-title">CH3 – Fan 1</div>
+            <div class="relay-state off">OFF</div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-on" onclick="setRelay(3, 1)">
+              <span>✓</span> ON
+            </button>
+            <button class="btn btn-off" onclick="setRelay(3, 0)">
+              <span>✕</span> OFF
+            </button>
+          </div>
+        </div>
+
+        <div class="relay-item">
+          <div class="relay-header">
+            <div class="relay-title">CH4 – Fan 2</div>
+            <div class="relay-state off">OFF</div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-on" onclick="setRelay(4, 1)">
+              <span>✓</span> ON
+            </button>
+            <button class="btn btn-off" onclick="setRelay(4, 0)">
+              <span>✕</span> OFF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      ESP32 Room Temperature Controller · Made with 
+    </div>
+  </div>
+
+  <script>
+    const ESP_BASE = "http://172.27.176.126";
+
+    const baseUrlSpan = document.getElementById("base-url");
+    const statusCard = document.getElementById("status-card");
+    const connBadge = document.getElementById("conn-badge");
+    const lastUpdateSpan = document.getElementById("last-update");
+
+    baseUrlSpan.textContent = ESP_BASE;
+
+    function setConnectionState(connected) {
+      if (connected) {
+        connBadge.className = "status-badge connected";
+        connBadge.innerHTML = '<span class="status-dot"></span> Connected';
+      } else {
+        connBadge.className = "status-badge disconnected";
+        connBadge.innerHTML = '<span class="status-dot"></span> Disconnected';
+      }
+    }
+
+    function setLastUpdate() {
+      const now = new Date();
+      lastUpdateSpan.textContent = "Last update: " + now.toLocaleTimeString();
+    }
+
+    async function refreshStatus() {
+      statusCard.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Loading status...</p>
+        </div>
+      `;
+
+      try {
+        const res = await fetch(ESP_BASE + "/status");
+        if (!res.ok) {
+          throw new Error("HTTP " + res.status);
+        }
+        const data = await res.json();
+        setConnectionState(true);
+        setLastUpdate();
+
+        const modeClass = data.mode === "MANUAL" ? "mode-manual" : "mode-auto";
+        const tempVal = data.temperature === null ? "--.-" : Number(data.temperature).toFixed(1);
+        const humVal = data.humidity === null ? "--" : Number(data.humidity).toFixed(1);
+        const manualInfo = data.mode === "MANUAL" 
+          ? `<span style="font-size:12px;color:#6b7280;margin-left:8px;">${data.manual_remaining_s}s</span>` 
+          : "";
+
+        statusCard.innerHTML = `
+          <h2>Status Ruangan</h2>
+          
+          <div style="margin-bottom:16px;">
+            <span class="mode-indicator ${modeClass}">
+              <span class="status-dot"></span>
+              ${data.mode} MODE
+            </span>
+            ${manualInfo}
+          </div>
+
+          <div class="temp-display">
+            <div class="temp-card">
+              <div class="temp-card-content">
+                <div class="temp-label">Target Temperature</div>
+                <div class="temp-value">${Number(data.target_temp).toFixed(1)}°C</div>
+              </div>
+            </div>
+            <div class="temp-card">
+              <div class="temp-card-content">
+                <div class="temp-label">Current Temperature</div>
+                <div class="temp-value">${tempVal}°C</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="current-readings">
+            <div class="reading">
+              <div class="reading-icon">🌡️</div>
+              <div class="reading-value">${tempVal}°C</div>
+              <div class="reading-label">Temperature</div>
+            </div>
+            <div class="reading">
+              <div class="reading-icon">💧</div>
+              <div class="reading-value">${humVal}%</div>
+              <div class="reading-label">Humidity</div>
+            </div>
+          </div>
+        `;
+
+        // Update relay states in control panel
+        updateRelayStates(data.relay);
+      } catch (err) {
+        setConnectionState(false);
+        statusCard.innerHTML = `
+          <h2> Status Ruangan</h2>
+          <div style="text-align:center;padding:40px;color:#6b7280;">
+            <p style="font-size:48px;margin-bottom:16px;">⚠️</p>
+            <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Connection Failed</p>
+            <p style="font-size:13px;">Gagal mengambil data dari ESP32</p>
+            <p style="font-size:12px;color:#9ca3af;margin-top:8px;">${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    function updateRelayStates(relay) {
+      const relayStates = [
+        { ch: 1, state: relay.ch1 },
+        { ch: 2, state: relay.ch2 },
+        { ch: 3, state: relay.ch3 },
+        { ch: 4, state: relay.ch4 }
+      ];
+
+      const relayItems = document.querySelectorAll('.relay-item');
+      relayItems.forEach((item, index) => {
+        const stateEl = item.querySelector('.relay-state');
+        const isOn = relayStates[index].state;
+        stateEl.className = isOn ? 'relay-state on' : 'relay-state off';
+        stateEl.textContent = isOn ? 'ON' : 'OFF';
+      });
+    }
+
+    async function setRelay(ch, state) {
+      try {
+        const url = `${ESP_BASE}/relay?ch=${ch}&state=${state}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error("HTTP " + res.status);
+        }
+        await res.json();
+        setTimeout(refreshStatus, 300);
+      } catch (err) {
+        alert("Error: " + err.message);
+        setConnectionState(false);
+      }
+    }
+
+    refreshStatus();
+    setInterval(refreshStatus, 5000);
+  </script>
+</body>
+</html>
